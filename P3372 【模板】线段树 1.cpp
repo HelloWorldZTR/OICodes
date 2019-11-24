@@ -1,131 +1,117 @@
-#include<iostream>
-/*
-*	Î´Ê¹ÓÃÀÁ¸üĞÂ£¬30%²âÊÔµãTLE 
-*/
+#include <iostream>
 using namespace std;
-
-typedef long long ll;
-
-struct node{
+/**
+*	FinalVersion
+*/
+struct Node {
+	long long sum;
 	int l;
 	int r;
-	ll sum;
-}; 
-ll arr[100000];
-node tr[100000*4];
+	int lazy;
+};
+const int maxn = 1e5;
+long long numbers[maxn + 10000];
+Node tree[maxn<<2];
 
-/*½¨Ê÷£ºarrÎªÔ­Öµ£¬ rootÎªµ±Ç°½Úµã£¬ start/end Îªµ±Ç°Çø¼ä*/
-void build_tree(node tree[], ll arr[], int root, int start, int end) {
-	tree[root].l = start;
-	tree[root].r = end;
+void buildTree(int now, int start, int end) {
+	//cout<<start<<", "<<end<<endl;
+	tree[now].l = start;
+	tree[now].r = end;
 	if(start == end) {
-		tree[root].sum = arr[start];
+		tree[now].sum = numbers[start];
 		return;
 	}
-	int left_child = 2 * root + 1;
-	int right_child = 2 * root + 2; 
-	int mid = (start + end) /2;
-	
-	build_tree(tree, arr, left_child  , start, mid);//½¨×óÊ÷ 
-	build_tree(tree, arr, right_child , mid+1, end);//½¨ÓÒÊ÷ 
-	tree[root].sum = tree[left_child].sum + tree[right_child].sum;//¼ÇÂ¼ºÍ 
+	int lchild = now << 1;//now * 2
+	int rchild = (now << 1) + 1;//now * 2 + 1
+	int mid = (start + end) >> 1;
+	buildTree(lchild, start, mid);
+	buildTree(rchild, mid+1, end);
+	tree[now].sum = tree[lchild].sum + tree[rchild].sum;
 }
-/*¸üĞÂ£º rootÎªµ±Ç°½Úµã£¬ start/endÎª¸üĞÂÇø¼ä£¬ kÎªĞŞ¸ÄÊ±¼ÓÉÏµÄÖµ*/ 
-void update(node tree[], int root, int start, int end, int k) {
-	if(tree[root].l == tree[root].r) {
-		if(tree[root].l>=start && tree[root].r<=end) {//¸üĞÂ·ûºÏÌõ¼şµÄ½Úµã 
-			tree[root].sum +=k;
-		}
-		return;
+
+void pushDown(int now) {
+	//if(now.lazy == 0)	return;
+	if(tree[now].lazy!=0) {
+		int lchild = (now<<1);
+		int rchild = (now<<1) + 1;
+		int v = tree[now].lazy;
+		tree[now].lazy = 0;
+		tree[lchild].sum += v * (tree[lchild].r - tree[lchild].l + 1);
+		tree[rchild].sum += v * (tree[rchild].r - tree[rchild].l + 1);
+		tree[lchild].lazy += v;
+		tree[rchild].lazy += v;
 	}
-	if(tree[root].r<start || tree[root].l>end) {//³ö½ç 
-		return;
-	}
-	int left_child = 2 * root + 1;
-	int right_child = 2 * root + 2; 
-	
-	update(tree, left_child , start, end, k);
-	update(tree, right_child, start, end, k);
-	tree[root].sum = tree[left_child].sum + tree[right_child].sum;//¸üĞÂÒ»ÏÂ 
 }
-/*ÀÁ¸üĞÂ£º rootÎªµ±Ç°½Úµã£¬ start/endÎª¸üĞÂÇø¼ä£¬ kÎªĞŞ¸ÄÊ±¼ÓÉÏµÄÖµ 
-void lazy_update(node tree[], int root, int start, int end, int k) {
-	if(tree[root].r<start || tree[root].l>end) {//³ö½ç 
-		return;
-	}else if(tree[root].l>=start && tree[root].r<=end){//¿ÉÒÔÀÁ¸üĞÂ 
-		tree[root].laz += (tree[root].r - tree[root].l) * k;
-		tree[root].il = true;
-		return;
-	}else{ //Õı³£¸üĞÂ 
-	int left_child = 2 * root + 1;
-	int right_child = 2 * root + 2; 
-	
-	update(tree, left_child , start, end, k);
-	update(tree, right_child, start, end, k);
-	tree[root].sum = tree[left_child].sum + tree[right_child].sum;//¸üĞÂÒ»ÏÂ 
-	} 
-}*/
-/*²éÑ¯£º rootÎªµ±Ç°½Úµã£¬ start/endÎª²éÑ¯Çø¼ä*/ 
-ll query(node tree[], int root, int start, int end) {
-	if(tree[root].r<start || tree[root].l>end) {//³ö½ç 
-		return 0;
-	}else if(tree[root].l>=start && tree[root].r<=end){
-		return tree[root].sum;
+
+void updateTree(int now, int start, int end, int v) {
+	if(tree[now].r < start)	return;
+	if(tree[now].l > end  )	return;
+	if(tree[now].l >= start && tree[now].r <= end) {
+		tree[now].sum  += (tree[now].r - tree[now].l + 1) * v;
+		tree[now].lazy += v;
+		return ;
 	}
-	ll ans = 0;
-	int left_child = 2 * root + 1;
-	int right_child = 2 * root + 2; 
-	ans += query(tree, left_child , start, end);
-	ans += query(tree, right_child, start, end);
-	return ans;
+	if(tree[now].lazy != 0)	pushDown(now);
+	int lchild = (now<<1);
+	int rchild = (now<<1) + 1;
+	//int mid = (start + end) >> 1;
+	updateTree(lchild, start, end, v);
+	updateTree(rchild, start, end, v);
+	tree[now].sum = tree[lchild].sum + tree[rchild].sum;
 }
-/*ÀÁ²éÑ¯£º rootÎªµ±Ç°½Úµã£¬ start/endÎª²éÑ¯Çø¼ä 
-ll lazy_query(node tree[], int root, int start, int end) {
-	if(tree[root].r<start || tree[root].l>end) {//³ö½ç 
-		return 0;
-	}else if(tree[root].l>=start && tree[root].r<=end){
-		if(tree[root].il){
-			return tree[root].sum + tree[root].laz;
-		}else{
-			return tree[root].sum;
-		}
+
+long long queryTree(int now, int start, int end) {
+	/*DEBUG
+	cerr<<"now at n="<<now<<" from ("<< tree[now].l << " ,"  << tree[now].r<<")"<<"start = "<<start<<"end = "<<end<<endl;
+	cerr<<"value = "<<tree[now].sum<<endl;
+	*/
+	/*å‡ºç•Œ*/
+	if(tree[now].r < start)	return 0;
+	if(tree[now].l > end  )	return 0;
+	/*è¿”å›åŒºé—´å’Œ*/
+	if(start<=tree[now].l && tree[now].r<=end)	return tree[now].sum;
+	/*éœ€è¦å¤„ç†*/
+	if(tree[now].lazy != 0)	pushDown (now);
+	int lchild = (now<<1);
+	int rchild = (now<<1) + 1;
+	//int mid = (start + end) >> 1;
+	return queryTree (lchild, start, end) + queryTree (rchild, start, end);
+}
+
+void dfs(int n) {
+	if(tree[n].sum!=0) {
+		cerr<<"now at n="<<n<<" from ("<< tree[n].l << " ,"  << tree[n].r<<")"<<endl;
+		cerr<<"value = "<<tree[n].sum<<"  lazy = "<<tree[n].lazy<<endl;
+		dfs(n<<1);
+		dfs((n<<1)+1);
 	}
-	ll ans = 0;
-	int left_child = 2 * root + 1;
-	int right_child = 2 * root + 2; 
-	ans += lazy_query(tree, left_child , start, end);
-	ans += lazy_query(tree, right_child, start, end);
-	return ans;
-}*/
+}
+
 int main() {
-	/*ll arr[1000] = {1, 5, 4, 2, 3};
-	build_tree(tr, arr, 0, 0, 4);
-	update(tr, 0, 0, 1, 1);
-	for(int i=0; i<9; i++) {
-		cout<<tr[i].sum<<endl;
-	}
-	cout<<endl<<query(tr, 0, 0, 3)<<endl;*/ 
+	//freopen("out.txt", "w", stderr);
+	ios::sync_with_stdio(0);
+	cin.tie(0), cout.tie(0);
 	int n, m;
-	cin>>n>>m;
-	for(int i=0; i<n; i++) {
-		cin>>arr[i];
-	} 
-	build_tree(tr, arr, 0, 0, n-1);
-	int temp, x, y, k;
-	ll ans = 0;
-	for(int i=0; i<m; i++) {
-		cin>>temp;
-		if(temp == 1) {
-			cin>>x>>y>>k;
-			update(tr, 0, x-1, y-1, k);//ÎŞÄÎ£¬Çø¼äĞ´³ÉÁË0~n-1¸ñÊ½ 
+	cin >> n >> m;
+	int i, options, x, y, k;
+	for(i=1; i<=n; i++) {//æ­»å› ï¼šï¼šnï¼Œmå†™å
+		cin>>numbers[i];
+	}
+	buildTree(1, 1, m);
+	//dfs(1);
+	for(i=0; i<m; i++) {
+		cin >> options;
+		if(options == 1) {
+			cin >> x >> y >> k;
+			updateTree (1, x, y, k);
 		}
-		if(temp == 2) {
-			cin>>x>>y;
-			ans = query(tr, 0, x-1, y-1);//ÀÁµÃ¸ÄÁË 
-			cout<<ans<<endl;
+		else if(options == 2) {
+			cin >> x >> y;
+			cout << queryTree (1, x, y) << endl;
+		}
+		else {
+			cerr << "Error! Unkown option" << endl;
 		}
 	}
-	
 	return 0;
 }
-
